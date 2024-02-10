@@ -2,6 +2,7 @@
 import os
 from PIL import Image
 import numpy as np
+import math
 
 os.chdir("C:/Users/pithy/Documents/journalocr")
 
@@ -16,8 +17,8 @@ def is_approximately_red(pixel):
     return r - max(g, b) > 13
 
 def get_reds(image):
-    x_list = []
-    y_list = []
+    top = []
+    bottom = []
 
     # Get image dimensions
     width, height = image.size
@@ -27,17 +28,34 @@ def get_reds(image):
         for y in range(round(0.1*height), round(0.2*height)):
             pixel = image.getpixel((x, y))
             if is_approximately_red(pixel):
-                x_list.append(x)
-                y_list.append(y)
-    
-    return [x_list, y_list]
+                top.append(x)
 
-def rotate_page(image, angle):
-    # TODO
+    # Iterate through each pixel
+    for x in range(round(0.1*width), round(0.2*width)):
+        for y in range(round(0.8*height), round(0.9*height)):
+            pixel = image.getpixel((x, y))
+            if is_approximately_red(pixel):
+                bottom.append(x)
+    return [top, bottom]
+
+def rotate_page(image):
+    before = get_reds(image)
+
+    top_mean = np.mean(before[0])
+    bottom_mean = np.mean(before[1])
+
+    _, height = image.size
+
+    top = 0.15*height
+    bottom = 0.85*height
+
+    slope = (top - bottom) / (top_mean - bottom_mean)
+
+    angle = math.degrees(math.atan(slope)) + 90
+
+    return image.rotate(angle, resample = Image.BICUBIC, expand = True).show()
 
 # Example usage
-input_image_path = "data/3-21.jpg"
-
-# Flip the red pixels 90*, fit a line, check slope to measure verticality
-coords = get_reds(Image.open(input_image_path))
-line_of_best_fit = np.polyfit(coords[1], coords[0], 1)
+input_image_path = "data/3-129.jpg"
+test_image = Image.open(input_image_path)
+rotate_page(test_image)
