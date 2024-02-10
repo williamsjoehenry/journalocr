@@ -47,10 +47,13 @@ def rotate_and_cleave_page(image_path):
     top = round(0.15*height)
     bottom = round(0.85*height)
 
-    slope = (top - bottom) / (top_mean - bottom_mean)
-    angle = math.degrees(math.atan(slope)) + 90
+    # print(round(top_mean), round(bottom_mean))
+    if round(top_mean) - round(bottom_mean) > 3:
+        slope = (top - bottom) / (top_mean - bottom_mean)
+        angle = math.degrees(math.atan(slope)) + 90
 
-    image = image.rotate(angle, resample = Image.BICUBIC, expand = True)
+        image = image.rotate(angle, resample = Image.BICUBIC, expand = True)
+    image.show()
 
     # split rotated image and save sidebar and body text
     split_point = np.mean(get_reds(image_path)[0])
@@ -71,11 +74,11 @@ def split_lines(image):
 
 
 # Example usage
-input_image_path = "data/2-138.jpg"
+input_image_path = "data/3-143.jpg"
 # test_image = Image.open(input_image_path)
 # width, height = test_image.size
 # split_lines(test_image)
-# rotate_and_cleave_page(input_image_path)
+rotate_and_cleave_page(input_image_path)
 
 # for journal_no in [1,2,3]:
 #     images = convert_from_path(f'data/{journal_no}.pdf')
