@@ -24,14 +24,14 @@ def get_reds(image):
     width, height = image.size
 
     # Iterate through each pixel
-    for x in range(round(0.1*width), round(0.2*width)):
+    for x in range(round(0.1*width), round(0.3*width)):
         for y in range(round(0.1*height), round(0.2*height)):
             pixel = image.getpixel((x, y))
             if is_approximately_red(pixel):
                 top.append(x)
 
     # Iterate through each pixel
-    for x in range(round(0.1*width), round(0.2*width)):
+    for x in range(round(0.1*width), round(0.3*width)):
         for y in range(round(0.8*height), round(0.9*height)):
             pixel = image.getpixel((x, y))
             if is_approximately_red(pixel):
@@ -56,6 +56,6 @@ def rotate_page(image):
     return image.rotate(angle, resample = Image.BICUBIC, expand = True).show()
 
 # Example usage
-input_image_path = "data/3-129.jpg"
+input_image_path = "data/3-92.jpg"
 test_image = Image.open(input_image_path)
 rotate_page(test_image)
