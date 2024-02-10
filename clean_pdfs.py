@@ -35,19 +35,19 @@ def get_reds(image_path):
     return [top, bottom]
 
 def rotate_and_cleave_page(image_path):
+    # Open image
     image = Image.open(image_path).convert('RGB')
-    before = get_reds(image_path)
 
+    # Rotate to vertical
+    before = get_reds(image_path)
     top_mean = np.mean(before[0])
     bottom_mean = np.mean(before[1])
 
     width, height = image.size
-
-    top = 0.15*height
-    bottom = 0.85*height
+    top = round(0.15*height)
+    bottom = round(0.85*height)
 
     slope = (top - bottom) / (top_mean - bottom_mean)
-
     angle = math.degrees(math.atan(slope)) + 90
 
     image = image.rotate(angle, resample = Image.BICUBIC, expand = True)
@@ -56,9 +56,12 @@ def rotate_and_cleave_page(image_path):
     split_point = np.mean(get_reds(image_path)[0])
     sidebar = image.crop(box = (0, 0, split_point, height))
     body = image.crop(box = (split_point, 0, width, height))
+
+    # split_lines(sidebar)
+    # split_lines(body)
     
-    sidebar.save(f'{image_path[0:-4]}-s.jpg')
-    body.save(f'{image_path[0:-4]}-b.jpg')
+    # sidebar.save(f'{image_path[0:-4]}-s.jpg')
+    # body.save(f'{image_path[0:-4]}-b.jpg')
 
 
 def split_lines(image):
@@ -74,8 +77,8 @@ input_image_path = "data/2-138.jpg"
 # split_lines(test_image)
 # rotate_and_cleave_page(input_image_path)
 
-for journal_no in [1,2,3]:
-    images = convert_from_path(f'data/{journal_no}.pdf')
-    for i, img in enumerate(images):
-        # TODO: consider refactoring image/path so that you don't need to save the intact pages as intermediaries?
-        img.save(f'data/{journal_no}-{i}.jpg', 'JPEG')
+# for journal_no in [1,2,3]:
+#     images = convert_from_path(f'data/{journal_no}.pdf')
+#     for i, img in enumerate(images):
+#         # TODO: consider refactoring image/path so that you don't need to save the intact pages as intermediaries?
+#         img.save(f'data/{journal_no}-{i}.jpg', 'JPEG')
