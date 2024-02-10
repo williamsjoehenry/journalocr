@@ -9,7 +9,7 @@ os.chdir("C:/Users/pithy/Documents/journalocr")
 def is_red(pixel):
     # Check if pixel falls within the red color range
     r, g, b = pixel
-    return r - max(g, b) > 12
+    return r - max(g, b) > 10
 
 def get_reds(image_path):
     image = Image.open(image_path).convert('RGB')
@@ -33,6 +33,46 @@ def get_reds(image_path):
             if is_red(pixel):
                 bottom.append(x)
     return [top, bottom]
+
+def is_blue(pixel):
+    # Check if pixel is blue or green (lines sometimes greenish blue on the scan)
+    r, g, b = pixel
+    return min(g, b) - r > 4
+
+def get_blues(image):
+    # image = Image.open(image_path).convert('RGB')
+    l1 = []
+    r1 = []
+    l2 = []
+    r2 = []
+
+    # Get image dimensions
+    width, height = image.size
+    first_line = round(height * 1.125/9.75)
+    second_line = round(height * (1.125 + 0.3125)/9.75)
+
+    # Iterate through each pixel
+    for x in range(round(0.1*width), round(0.3*width)):
+        for y in range(first_line - 20, first_line + 20):
+            pixel = image.getpixel((x, y))
+            if is_blue(pixel):
+                l1.append((x, y))
+    for pixel in l1:
+        x, y = pixel
+        image.putpixel((x,y), (0, 0, 255))
+
+    # Iterate through each pixel
+    for x in range(round(0.1*width), round(0.3*width)):
+        for y in range(second_line - 20, second_line + 20):
+            pixel = image.getpixel((x, y))
+            if is_blue(pixel):
+                l2.append((x, y))
+    for pixel in l2:
+        x, y = pixel
+        image.putpixel((x,y), (0, 0, 255))
+
+    image.show()
+
 
 def crop_top(image, width, height):
     # Check brightness at top of page on the left and right ends
@@ -66,14 +106,18 @@ def rotate_and_cleave_page(image_path):
 
         image = image.rotate(angle, resample = Image.BICUBIC, expand = True)
 
-    # Trim the top of the page to remove any black from poor scan or introduced in rotation
+    # Trim the top of the page to remove any black from poor scan/rotation
     image = crop_top(image, width, height)
+
+    # draw = ImageDraw.Draw(image).line((0, height*(1.125/9.75), width, height*(1.125/9.75)), fill = 'red', width = 1)
+    # image.show()
+    get_blues(image)
 
     # split rotated image and save sidebar and body text
     split_point = np.mean(get_reds(image_path)[0])
     sidebar = image.crop(box = (0, 0, split_point, height))
     body = image.crop(box = (split_point, 0, width, height))
-    sidebar.show(); body.show()
+    # sidebar.show(); body.show()
 
     # split_lines(sidebar)
     # split_lines(body)
@@ -83,7 +127,8 @@ def rotate_and_cleave_page(image_path):
 
 
 # Example usage
-input_image_path = "data/1-152.jpg"
+from PIL import ImageDraw
+input_image_path = "data/2-120.jpg"
 rotate_and_cleave_page(input_image_path)
 # test_image = Image.open(input_image_path).convert('RGB')
 # crop_top(test_image)
