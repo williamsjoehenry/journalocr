@@ -37,14 +37,11 @@ def get_reds(image_path):
 def is_blue(pixel):
     # Check if pixel is blue or green (lines sometimes greenish blue on the scan)
     r, g, b = pixel
-    return min(g, b) - r > 4
+    return min(g, b) - r > 8
 
 def get_blues(image):
     # image = Image.open(image_path).convert('RGB')
     l1 = []
-    r1 = []
-    l2 = []
-    r2 = []
 
     # Get image dimensions
     width, height = image.size
@@ -52,26 +49,17 @@ def get_blues(image):
     second_line = round(height * (1.125 + 0.3125)/9.75)
 
     # Iterate through each pixel
-    for x in range(round(0.1*width), round(0.3*width)):
-        for y in range(first_line - 20, first_line + 20):
+    for x in range(width):
+        for y in range(height):
             pixel = image.getpixel((x, y))
             if is_blue(pixel):
-                l1.append((x, y))
-    for pixel in l1:
-        x, y = pixel
-        image.putpixel((x,y), (0, 0, 255))
+                l1.append(y)
+    # for pixel in l1:
+    #     x, y = pixel
+    #     image.putpixel((x,y), (0, 0, 255))
 
-    # Iterate through each pixel
-    for x in range(round(0.1*width), round(0.3*width)):
-        for y in range(second_line - 20, second_line + 20):
-            pixel = image.getpixel((x, y))
-            if is_blue(pixel):
-                l2.append((x, y))
-    for pixel in l2:
-        x, y = pixel
-        image.putpixel((x,y), (0, 0, 255))
-
-    image.show()
+    # image.show()
+    return l1
 
 
 def crop_top(image, width, height):
@@ -86,6 +74,20 @@ def crop_top(image, width, height):
     # Chop a little off the top and try again
     image = image.crop((0, 10, width, height))
     return crop_top(image, width, height)
+
+def split_lines(image):
+    splits = []
+    # Loop through the page in bite-size chunks
+    for chunk in range(200, image.height, 40):
+        blues = get_blues(image.crop((100, chunk, image.width-100, chunk+40)))
+        if len(blues) > 5:
+            line_center = round(np.mean(blues))
+            splits.append(chunk+line_center)
+    img1 = ImageDraw.Draw(image)
+    for split in splits:
+        img1.line([(0, split), (image.width, split)], fill = 'blue', width = 1)
+    image.show()
+
 
 def rotate_and_cleave_page(image_path):
     # Open image
@@ -113,15 +115,15 @@ def rotate_and_cleave_page(image_path):
     # image.show()
     get_blues(image)
 
+    # Get line splits for sidebar and body simultaneously
+    split_lines(image)
+
     # split rotated image and save sidebar and body text
     split_point = np.mean(get_reds(image_path)[0])
     sidebar = image.crop(box = (0, 0, split_point, height))
     body = image.crop(box = (split_point, 0, width, height))
     # sidebar.show(); body.show()
 
-    # split_lines(sidebar)
-    # split_lines(body)
-    
     # sidebar.save(f'{image_path[0:-4]}-s.jpg')
     # body.save(f'{image_path[0:-4]}-b.jpg')
 
@@ -129,9 +131,15 @@ def rotate_and_cleave_page(image_path):
 # Example usage
 from PIL import ImageDraw
 input_image_path = "data/2-120.jpg"
+# print(split_lines(Image.open(input_image_path).convert('RGB')))
 rotate_and_cleave_page(input_image_path)
+# split_lines(Image.open(input_image_path).convert('RGB'))
 # test_image = Image.open(input_image_path).convert('RGB')
 # crop_top(test_image)
+
+# Test opencv method
+# import cv2
+# split_lines(input_image_path)
 
 # for journal_no in [1,2,3]:
 #     images = convert_from_path(f'data/{journal_no}.pdf')
