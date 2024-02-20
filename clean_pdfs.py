@@ -34,12 +34,12 @@ def get_reds(image_path):
                 bottom.append(x)
     return [top, bottom]
 
-def is_blue(pixel):
+def is_blue(pixel, threshold):
     # Check if pixel is blue or green (lines sometimes greenish blue on the scan)
     r, g, b = pixel
-    return min(g, b) - r > 8
+    return min(g, b) - r > threshold
 
-def get_blues(image):
+def get_blues(image, threshold):
     # image = Image.open(image_path).convert('RGB')
     l1 = []
 
@@ -52,13 +52,8 @@ def get_blues(image):
     for x in range(width):
         for y in range(height):
             pixel = image.getpixel((x, y))
-            if is_blue(pixel):
+            if is_blue(pixel, threshold):
                 l1.append(y)
-    # for pixel in l1:
-    #     x, y = pixel
-    #     image.putpixel((x,y), (0, 0, 255))
-
-    # image.show()
     return l1
 
 
@@ -75,21 +70,42 @@ def crop_top(image, width, height):
     image = image.crop((0, 10, width, height))
     return crop_top(image, width, height)
 
-def split_lines(image):
+def split_lines(image, threshold):
+    # TODO: what if you miss a line or two at the top, as in 2-120?
     splits = []
-    # Loop through the page in bite-size chunks
-    for chunk in range(200, image.height, 40):
-        blues = get_blues(image.crop((100, chunk, image.width-100, chunk+40)))
-        if len(blues) > 5:
-            line_center = round(np.mean(blues))
+
+    # Loop through the page in bite-size chunks and detect lines
+    for chunk in range(100, image.height, 40):
+        blues = get_blues(image.crop((100, chunk, image.width-100, chunk+40)), threshold)
+        if len(blues) > 25:
+            line_center = round(np.median(blues))
             splits.append(chunk+line_center)
-    img1 = ImageDraw.Draw(image)
-    for split in splits:
-        img1.line([(0, split), (image.width, split)], fill = 'blue', width = 1)
-    image.show()
+    
+    # TODO: Resolve duplicates
+    distances = [splits[i] - splits[i-1] for i in range(1, len(splits))]
+    split_distance = round(np.median(distances))
+    deviances = [distances[i] + splits[i+1] - splits[i] for i in range(1, len(splits)-1)]
+    to_remove = []
+    for i in range(1, len(splits)-1):
+        # if abs(deviances[i] - 2*split_distance) < 5:
+        if deviances[i-1] < 50:
+            to_remove.append(splits[i-1])
+    # splits = [split not in to_remove for split in splits]
+    # np.delete(splits, to_remove).tolist()
+
+    # img1 = ImageDraw.Draw(image)
+    # for split in splits:
+    #     img1.line([(0, split), (image.width, split)], fill = 'blue', width = 1)
+    # image.show()
+            
+    # Split the image and save each line
+    for i, split in enumerate(splits):
+        # TODO: finish logic for filenames
+        image.crop((0, split-split_distance+10, image.width, split+20)).save(f'data/test/2-{i}.jpeg', 'JPEG')
+    
 
 
-def rotate_and_cleave_page(image_path):
+def rotate_and_cleave_page(image_path, threshold):
     # Open image
     image = Image.open(image_path).convert('RGB')
 
@@ -111,12 +127,8 @@ def rotate_and_cleave_page(image_path):
     # Trim the top of the page to remove any black from poor scan/rotation
     image = crop_top(image, width, height)
 
-    # draw = ImageDraw.Draw(image).line((0, height*(1.125/9.75), width, height*(1.125/9.75)), fill = 'red', width = 1)
-    # image.show()
-    get_blues(image)
-
     # Get line splits for sidebar and body simultaneously
-    split_lines(image)
+    split_lines(image, threshold)
 
     # split rotated image and save sidebar and body text
     split_point = np.mean(get_reds(image_path)[0])
@@ -130,9 +142,9 @@ def rotate_and_cleave_page(image_path):
 
 # Example usage
 from PIL import ImageDraw
-input_image_path = "data/2-120.jpg"
+input_image_path = "data/2-121.jpg"
 # print(split_lines(Image.open(input_image_path).convert('RGB')))
-rotate_and_cleave_page(input_image_path)
+rotate_and_cleave_page(input_image_path, 12)
 # split_lines(Image.open(input_image_path).convert('RGB'))
 # test_image = Image.open(input_image_path).convert('RGB')
 # crop_top(test_image)
