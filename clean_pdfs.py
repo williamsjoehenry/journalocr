@@ -142,14 +142,15 @@ def rotate_and_cleave_page(image_path, threshold, journal_no, page_no):
 # rotate_and_cleave_page(input_image_path, 10, 1)
 
 # Set contrast threshold for blue line detection per notebook
-thresholds = [10, 17, 8]
+thresholds = [8, 17, 8]
 # Set page ranges to save from each notebook
 page_ranges = {1: [*range(14, 154)], 2: [*range(2, 152)], 3: [*range(2, 155)]}
 # This will decouple the filenames from the pagenumbers, so adjust for that
 # page_offsets = [13, 1, 1]
 # print(page_ranges[1])
 
-for journal_index, journal_no in enumerate([1, 2, 3]):
+# TODO: fix issue where loop breaks after every notebook's final page
+for journal_index, journal_no in enumerate([1,2,3]):
     images = convert_from_path(f'data/originals/{journal_no}.pdf')
     for page_no, img in enumerate(images):
         # print(page_num)
