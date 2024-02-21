@@ -1,6 +1,6 @@
 from pdf2image import convert_from_path
 import os
-from PIL import Image
+from PIL import Image, ImageDraw
 import numpy as np
 import math
 
@@ -84,12 +84,12 @@ def split_lines(image, threshold):
     # TODO: Resolve duplicates
     distances = [splits[i] - splits[i-1] for i in range(1, len(splits))]
     split_distance = round(np.median(distances))
-    deviances = [distances[i] + splits[i+1] - splits[i] for i in range(1, len(splits)-1)]
-    to_remove = []
-    for i in range(1, len(splits)-1):
-        # if abs(deviances[i] - 2*split_distance) < 5:
-        if deviances[i-1] < 50:
-            to_remove.append(splits[i-1])
+    # deviances = [distances[i] + splits[i+1] - splits[i] for i in range(1, len(splits)-1)]
+    # to_remove = []
+    # for i in range(1, len(splits)-1):
+    #     # if abs(deviances[i] - 2*split_distance) < 5:
+    #     if deviances[i-1] < 50:
+    #         to_remove.append(splits[i-1])
     # splits = [split not in to_remove for split in splits]
     # np.delete(splits, to_remove).tolist()
 
@@ -134,24 +134,11 @@ def rotate_and_cleave_page(image_path, threshold):
     split_point = np.mean(get_reds(image_path)[0])
     sidebar = image.crop(box = (0, 0, split_point, height))
     body = image.crop(box = (split_point, 0, width, height))
-    # sidebar.show(); body.show()
-
-    # sidebar.save(f'{image_path[0:-4]}-s.jpg')
-    # body.save(f'{image_path[0:-4]}-b.jpg')
 
 
 # Example usage
-from PIL import ImageDraw
 input_image_path = "data/2-121.jpg"
-# print(split_lines(Image.open(input_image_path).convert('RGB')))
 rotate_and_cleave_page(input_image_path, 12)
-# split_lines(Image.open(input_image_path).convert('RGB'))
-# test_image = Image.open(input_image_path).convert('RGB')
-# crop_top(test_image)
-
-# Test opencv method
-# import cv2
-# split_lines(input_image_path)
 
 # for journal_no in [1,2,3]:
 #     images = convert_from_path(f'data/{journal_no}.pdf')
