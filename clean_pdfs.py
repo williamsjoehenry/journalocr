@@ -3,6 +3,7 @@ import os
 from PIL import Image, ImageDraw
 import numpy as np
 import math
+from tqdm.notebook import tqdm
 
 os.chdir("C:/Users/pithy/Documents/journalocr")
 
@@ -70,7 +71,7 @@ def crop_top(image, width, height):
     image = image.crop((0, 10, width, height))
     return crop_top(image, width, height)
 
-def split_lines(image, threshold):
+def split_lines(image, threshold, journal_no, page_no):
     # TODO: what if you miss a line or two at the top, as in 2-120?
     splits = []
 
@@ -99,13 +100,13 @@ def split_lines(image, threshold):
     # image.show()
             
     # Split the image and save each line
-    for i, split in enumerate(splits):
+    for line, split in enumerate(splits):
         # TODO: finish logic for filenames
-        image.crop((0, split-split_distance+10, image.width, split+20)).save(f'data/test/2-{i}.jpeg', 'JPEG')
+        image.crop((0, split-split_distance+10, image.width, split+25)).save(f'data/lines/{journal_no}-{page_no}-{line}.jpeg', 'JPEG')
     
 
 
-def rotate_and_cleave_page(image_path, threshold):
+def rotate_and_cleave_page(image_path, threshold, journal_no, page_no):
     # Open image
     image = Image.open(image_path).convert('RGB')
 
@@ -128,7 +129,7 @@ def rotate_and_cleave_page(image_path, threshold):
     image = crop_top(image, width, height)
 
     # Get line splits for sidebar and body simultaneously
-    split_lines(image, threshold)
+    split_lines(image, threshold, journal_no, page_no)
 
     # split rotated image and save sidebar and body text
     split_point = np.mean(get_reds(image_path)[0])
@@ -137,11 +138,22 @@ def rotate_and_cleave_page(image_path, threshold):
 
 
 # Example usage
-input_image_path = "data/2-121.jpg"
-rotate_and_cleave_page(input_image_path, 12)
+# input_image_path = "data/1-121.jpg"
+# rotate_and_cleave_page(input_image_path, 10, 1)
 
-# for journal_no in [1,2,3]:
-#     images = convert_from_path(f'data/{journal_no}.pdf')
-#     for i, img in enumerate(images):
-#         # TODO: consider refactoring image/path so that you don't need to save the intact pages as intermediaries?
-#         img.save(f'data/{journal_no}-{i}.jpg', 'JPEG')
+# Set contrast threshold for blue line detection per notebook
+thresholds = [10, 17, 8]
+# Set page ranges to save from each notebook
+page_ranges = {1: [*range(14, 154)], 2: [*range(2, 152)], 3: [*range(2, 155)]}
+# This will decouple the filenames from the pagenumbers, so adjust for that
+# page_offsets = [13, 1, 1]
+# print(page_ranges[1])
+
+for journal_index, journal_no in enumerate([1, 2, 3]):
+    images = convert_from_path(f'data/originals/{journal_no}.pdf')
+    for page_no, img in enumerate(images):
+        # print(page_num)
+        # TODO: consider refactoring image/path so that you don't need to save the intact pages as intermediaries?
+        img.save(f'data/full_pages/{journal_no}-{page_no}.jpg', 'JPEG')
+        if page_no in page_ranges[journal_no]:
+            rotate_and_cleave_page(f'data/full_pages/{journal_no}-{page_no}.jpg', thresholds[journal_index], journal_no, page_no)
